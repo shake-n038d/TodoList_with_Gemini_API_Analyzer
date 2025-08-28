@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>タスク管理</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+	
+	<!--他のhtmlで読み込むhtmlテンプレート-->
+	
+	<header th:fragment="header">
+		<div class="d-flex">
+			<div class="ps-5 d-flex align-items-center justify-content-end">
+				<h1 class="mb-0">
+					<a class="custom_a" href="/tasks">
+						<img th:src="@{/images/task.png}" alt="task" class="icon" style="width: 45px; height: 45px;">
+						Tasks Manager
+					</a>
+				</h1>
+			</div>
+			
+			<div class="p-2 ms-auto pe-5">
+				<div class="dropdown mt-auto d-flex align-items-end justify-content-end">
+	                <a href="#" class="d-flex align-items-center justify-content-center p-3 link-light text-decoration-none dropdown-toggle rounded border-right" id="dropdownUser3" data-bs-toggle="dropdown" aria-expanded="false">
+	                    <img src="https://github.com/mdo.png" alt="mdo" width="46" height="46" class="rounded-circle me-2">
+	                    <span class="text-light">　[[${@account.name}]]</span>
+	                </a>
+	                <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser3">
+	                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#userSettingsModal">設定</a></li>
+	                    <li><hr class="dropdown-divider"></li>
+	                    <li><a class="dropdown-item" href="/logout">ログアウト</a></li>
+	                </ul>
+	            </div>
+			</div>
+		</div>
+	</header>
+	
+	<footer th:fragment="footer" class="bg-dark text-light pt-4">
+	    <div class="container mt-5 text-center">
+	        <div class="row">
+	            <div class="col-md-4">
+	                <h4>About Me</h4><br>
+	                <p>&copy; ○○-2025 ANA Systems Inc. All Rights Reserved.</p>
+	            </div>
+	            
+	            <div class="col-md-4">
+	                <h4>ANA Group Sites</h4><br>
+	                <ul class="list-unstyled">
+	                    <li><a href="https://www.ana.co.jp/ja/jp/" class="text-light">ANA | 全日本空輸</a></li>
+	                    <li><a href="https://www.anasystems.co.jp/" class="text-light">ANA Systems</a></li>
+	                </ul>
+	            </div>
+	            
+	            <div class="col-md-4">
+	                <h4>Access To Account</h4><br>
+	                <div class="social-links">
+	                    <a href="https://x.com/ANA_travel_info?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor"
+	                       class="text-light me-2 mx-1">
+	                       <img th:src="@{/images/x.png}" alt="X / Twitter" style="width: 30px; height: 30px;">
+	                    </a>
+	                    <a href="https://www.instagram.com/ana.japan/?hl=ja" class="text-light me-2 mx-1">
+	                        <img th:src="@{/images/instagram.png}" alt="Instagram" style="width: 30px; height: 30px;">
+	                    </a>
+	                    <a href="https://github.com/shake-n038d" class="text-light mx-1">
+	                        <img th:src="@{/images/github.png}" alt="Github (Kinjo's Account)" style="width: 30px; height: 30px;">
+	                    </a>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</footer>
+
+</body>
+</html>

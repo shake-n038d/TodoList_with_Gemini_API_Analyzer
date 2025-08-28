@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>タスク管理 | 一覧</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="shortcut icon" href="../favicon.ico" >
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+
+<script	src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+</head>
+<body>
+	
+<header th:replace="~{fragments::header}"></header>	
+<div>
+	<div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+		    <div class="modal-dialog modal-dialog-centered">
+		        <div class="modal-content">
+		            <div class="modal-header bg-primary">
+		                <h5 class="modal-title text-light" id="addTaskModalLabel">タスクの追加</h5>
+		                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		            </div>
+		            <div class="modal-body">
+		                <div id="addTaskErrMsgs" class="alert alert-danger align-middle" style="display:none;"></div>
+		                <form id="addTaskForm" action="/tasks/add" method="post" class="d-flex flex-column align-items-end">
+		                    <table class="table">
+		                        <tr>
+		                            <th>カテゴリー</th>
+		                            <td>
+		                                <select name="categoryId" class="form-select">
+		                                    <option th:each="category:${categories}" th:value="${category.id}" th:text="${category.name}"></option>
+		                                </select>
+		                            </td>
+		                        </tr>
+		                        <tr>
+		                            <th>タイトル</th>
+		                            <td><input type="text" name="title" class="form-control"></td>
+		                        </tr>
+		                        <tr>
+		                            <th>メモ</th>
+		                            <td><textarea name="memo" class="form-control" rows="3"></textarea></td>
+		                        </tr>
+		                        <tr>
+		                            <th>期限</th>
+		                            <td><input type="date" name="closingDate"></td>
+		                        </tr>
+		                    </table>
+		                    <button type="submit" class="btn btn-primary me-2">
+								<i class="bi bi-file-earmark-plus me-1"></i>追加
+							</button>
+		                </form>
+		            </div>
+		        </div>
+		    </div>
+		</div>
+
+		<div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-aria-hidden="true">
+		    <div class="modal-dialog modal-dialog-centered">
+		        <div class="modal-content">
+		            <div class="modal-header bg-success">
+		                <h5 class="modal-title text-light" id="editTaskModalLabel">タスクの編集</h5>
+		                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		            </div>
+		            <div class="modal-body">
+		                <div id="editTaskErrMsgs" class="alert alert-danger align-middle" style="display:none;"></div>
+		                <form id="editTaskForm" method="post" class="d-flex flex-column align-items-end">
+		                    <table class="table">
+		                        <tr>
+		                            <th>カテゴリー</th>
+		                            <td>
+		                                <select name="categoryId" id="editCategoryId" class="form-select">
+		                                    <option th:each="category:${categories}" th:value="${category.id}" th:text="${category.name}"></option>
+		                                </select>
+		                            </td>
+		                        </tr>
+		                        <tr>
+		                            <th>タイトル</th>
+		                            <td><input type="text" name="title" id="editTitle" class="form-control"></td>
+		                        </tr>
+		                        <tr>
+		                            <th>メモ</th>
+		                            <td><textarea name="memo" id="editMemo" class="form-control" rows="3"></textarea></td>
+		                        </tr>
+		                        <tr>
+		                            <th>期限</th>
+		                            <td>
+										<input type="date" name="closingDate" id="editClosingDate">
+									</td>
+		                        </tr>
+		                        <tr>
+		                            <th>進捗状況</th>
+		                            <td>
+		                                <select name="progress" id="editProgress" class="form-select">
+		                                    <option value="0">未着手</option>
+		                                    <option value="1">進行中</option>
+		                                    <option value="2">完了</option>
+		                                </select>
+		                            </td>
+		                        </tr>
+		                    </table>
+		                    <button type="submit" class="btn btn-outline-success me-2">
+								<i class="bi bi-arrow-clockwise me-1"></i>更新
+							</button>
+		                </form>
+		            </div>
+		        </div>
+		    </div>
+		</div>
+		
+		
+		<div class="modal fade" id="userSettingsModal" tabindex="-1" aria-labelledby="userSettingsLabel" aria-hidden="true">
+	    <div class="modal-dialog modal-dialog-centered">
+	        <div class="modal-content">
+	            <div class="modal-header">
+	                <h5 class="modal-title" id="userSettingsModalLabel">ユーザー情報の編集</h5>
+	                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+	            </div>
+	            <div class="modal-body">
+	                <div id="userSettingsErrMsg" class="alert alert-danger align-middle" style="display:none;"></div>
+	                <form id="userSettingsForm" th:action="@{/users/settings/{id}(id = ${@account.id})}" method="post" class="d-flex flex-column align-items-end">
+	                    <table class="table">
+	                        <tr>
+	                            <th>名前</th>
+	                            <td><input type="text" name="username" th:value="${@account.name}"></td>
+	                        </tr>
+	                        <tr>
+	                            <th>メールアドレス</th>
+	                            <td><input type="email" name="email" th:value="${@account.email}"></td>
+	                        </tr>
+	                        <tr>
+	                            <th></th>
+	                            <td>
+									<div class="form-check form-switch">
+									  <input class="form-check-input" type="checkbox" name="needGraph" role="switch" id="flexSwitchCheckDefault" th:checked="${@account.needGraph}">
+									  <label class="form-check-label" for="flexSwitchCheckDefault">グラフの表示</label>
+									</div>
+								</td>
+	                        </tr>
+	                    </table>
+	                    <button type="submit" class="btn btn-outline-success me-2">
+							<i class="bi bi-arrow-clockwise me-1"></i>
+							変更
+						</button>
+	                </form>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+		
+	<div class="modal fade" id="aiAdviceModal" tabindex="-1" aria-labelledby="aiAdviceLabel" aria-hidden="true">
+	    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+	        <div class="modal-content">
+	            <div class="modal-header">
+	                <h5 class="modal-title" id="aiAdviceModalLabel">AIからのアドバイス</h5>
+	            </div>
+	            <div class="modal-body">
+	                
+	            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+	        </div>
+	    </div>
+	</div>
+</div>
+	
+	<main class="bg-main container-fluid">
+		<div class="row bg-light">
+			<nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse fs-5">
+		        <div class="d-flex flex-column h-100">
+		            <a href="/tasks" class="d-flex align-items-center justify-content-center p-3 link-dark text-decoration-none border-bottom">
+		                <span class="fs-4 fw-semibold"><i class="bi bi-funnel me-1"></i>フィルター</span>
+		            </a>
+
+		            <ul class="list-unstyled ps-0 mb-auto ms-3 m-2">
+		                <li class="mb-1">
+		                    <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#home-collapse" aria-expanded="true">
+		                        <strong><i class="bi bi-house me-1"></i>カテゴリ別</strong>
+		                    </button>
+		                    <div class="collapse show" id="home-collapse">
+		                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ps-5">
+		                            <li class="mb-2"><a th:href="@{/tasks}" class="link-dark rounded">- 全タスク</a></li>
+		                            <li th:each="category : ${categories}" class="mb-2">
+		                                <a th:href="@{/tasks(categoryId=${category.id})}" class="link-dark rounded">
+		                                    - [[${category.name}]]
+		                                </a>
+		                            </li>
+		                        </ul>
+		                    </div>
+		                </li>
+
+		                <li class="mb-1">
+		                    <button class="btn btn-toggle align-items-center rounded collapsed sidebar_button" data-bs-toggle="collapse" data-bs-target="#progress-collapse" aria-expanded="false">
+		                        <strong><i class="bi bi-alarm me-1"></i>進捗状況</strong>
+		                    </button>
+		                    <div class="collapse" id="progress-collapse">
+		                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ps-5">
+		                            <li class="mb-2"><a th:href="@{/tasks(progress=0)}" class="link-dark rounded">- <span class="text-danger me-1">●</span>未着手</a></li>
+		                            <li class="mb-2"><a th:href="@{/tasks(progress=1)}" class="link-dark rounded">- <span class="text-warning me-1">●</span>進行中</a></li>
+		                            <li class="mb-2"><a th:href="@{/tasks(progress=2)}" class="link-dark rounded">- <span class="text-success me-1">●</span>完了</a></li>
+		                        </ul>
+		                    </div>
+		                </li>
+		                
+		                <li class="mb-1">
+		                    <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse" data-bs-target="#sort-collapse" aria-expanded="false">
+		                        <strong><i class="bi bi-sort-down-alt me-1"></i>ソート</strong>
+		                    </button>
+		                    <div class="collapse" id="sort-collapse">
+		                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ps-5">
+		                            <li class="mb-2"><a th:href="@{/tasks(sortByClosingDate='true')}" class="link-dark rounded">- 期限の近い順</a></li>
+		                        </ul>
+		                    </div>
+		                </li>
+		            </ul>
+		        </div>
+		    </nav>
+			
+			<div class="col-md-9 col-lg-10 px-md-4 pt-2 pb-3 mt-2 mx-0">
+				<div class="container p-3">
+					
+					<div class="card mb-3">
+						<div class="card-body bg-secondary" th:if="!${#strings.equals(isTrash, 'true')}">
+							<div class="container-fluid py-1 text-light display-6 mb-0" >
+								<div><i class="bi bi-card-checklist me-4"></i>タスク管理画面</div>
+							</div>
+						</div>
+						
+						<div class="card-body bg-secondary" th:if="${#strings.equals(isTrash, 'true')}">
+							<div class="container-fluid py-1 text-light display-6 mb-0">
+								<div><i class="bi bi-trash me-4"></i>ゴミ箱</div>
+							</div>
+						</div>
+					</div>
+					<div th:if="${@account.needGraph}">
+						<div class="row align-items-center" th:if="!${#strings.equals(isTrash, 'true')}">
+						    <div class="col-8">
+						        <canvas id="ChartDemo" width="150" height="50"></canvas>
+						    </div>
+						    <div class="col-4 text-center">
+						        <h4 class="text-center">[[${graphMsg}]]</h4><br>
+						        <canvas id="Statistic" width="100" height="50"></canvas>
+						    </div>
+						</div>
+						
+						<div class="row align-items-center mt-1" th:if="!${#strings.equals(isTrash, 'true')}">
+							<div class="d-flex justify-content-center align-items-center mt-3 mb-4 col-8">
+								<a th:href="@{/tasks(filterGraphArea=${filterGraphArea}, targetWeekOrMonth=${targetWeekOrMonth != null ? targetWeekOrMonth - 1 : -1}, progress=${progress}, categoryId=${param.categoryId})}" class="btn btn-outline-secondary me-3">&lt;</a>
+								<a th:href="@{/tasks(filterGraphArea=0, progress=${progress},  categoryId=${param.categoryId})}"
+									th:classappend="${filterGraphArea == 0 || filterGraphArea == null} ? 'btn-primary' : 'btn-outline-primary'"
+									class="btn me-2"><i class="bi bi-calendar-week me-1"></i>今週</a>
+								<a th:href="@{/tasks(filterGraphArea=1, progress=${progress},  categoryId=${param.categoryId})}"
+									th:classappend="${filterGraphArea == 1} ? 'btn-primary' : 'btn-outline-primary'"
+									class="btn me-2"><i class="bi bi-calendar3 me-1"></i>今月</a>
+								<a th:href="@{/tasks(filterGraphArea=${filterGraphArea}, targetWeekOrMonth=${targetWeekOrMonth != null ? targetWeekOrMonth + 1 : 1}, progress=${progress},  categoryId=${param.categoryId})}" class="btn btn-outline-secondary ms-1">&gt;</a>
+							</div>
+							
+							<div class="d-flex justify-content-center align-items-center mb-4 col-4">
+								<button id="getAdviceButton" class="btn btn-outline-success mt-3"><i class="bi bi-robot me-2"></i>分析を依頼</button>
+							</div>
+						</div>
+						
+						<div id="ai-advice-area" class="alert alert-info mt-4" style="display:none;">
+						    <strong>AIからのアドバイス:</strong>
+						    <p id="ai-advice-text"></p>
+						</div>
+					</div>
+					
+						
+					<div class="card mt-3">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center mb-4 p-3">
+									<th:block th:if="!${#strings.equals(isTrash, 'true')}">
+										<form action="/tasks" method="get" class="d-flex me-3">
+									        <input type="text" name="keyword" placeholder="キーワードを入力" class="form-control me-2">
+											<button type="submit" class="btn btn-secondary">
+									            <img th:src="@{/images/Search.png}" alt="Search" class="icon" style="width: 15px; height: 15px;">
+									        </button>
+									    </form>
+									</th:block>
+									
+									<th:block th:if="${#strings.equals(isTrash, 'true')}">
+										<form action="/tasks" method="get" class="d-flex me-3">
+									        <input type="text" name="keyword" placeholder="キーワードを入力" class="form-control me-2">
+											<input type="hidden" name="trash" th:value="${isTrash}">    
+											<button type="submit" class="btn btn-secondary">
+									            <img th:src="@{/images/Search.png}" alt="Search" class="icon" style="width: 15px; height: 15px;">
+									        </button>
+									    </form>
+									</th:block>
+								    
+								    <div class="d-flex align-items-center me-3">
+								        <th:block th:if="!${#strings.equals(isTrash, 'true')}">
+								            <a href="/tasks?trash=true" class="btn btn-secondary">
+								                <img th:src="@{/images/Trash.png}" alt="trash" class="icon">
+								            </a>
+								        </th:block>
+								        <th:block th:if="${#strings.equals(isTrash, 'true')}">
+								            <a href="/tasks" class="btn btn-secondary">
+								                <img th:src="@{/images/Back.png}" alt="back" class="icon">
+								            </a>
+								        </th:block>
+								    </div>
+								</div>
+								
+								<div class="card mb-3 ms-0">
+									<div class="card-body">
+										<div class="container p-2">
+											<span><strong>カテゴリ　</strong></span>
+											<img th:src="@{/images/businessman.png}" alt="job" class="icon ms-0" style="width: 48px; height: 48px;">
+											<span class="me-5">　仕事</span>
+											<img th:src="@{/images/hobbies.png}" alt="hobby" class="icon" style="width: 48px; height: 48px;">
+											<span class="me-5">　趣味</span>
+											<img th:src="@{/images/Shopping.png}" alt="shopping" class="icon" style="width: 48px; height: 48px;">
+											<span class="me-5">　買い物</span>
+											<img th:src="@{/images/question.png}" alt="question" class="icon" style="width: 40px; height: 40px;">
+											<span>　その他</span>
+										</div>
+										
+										<div class="container p-2">
+											<span class="pe-2"><strong>進捗状況　</strong></span>
+											<img th:src="@{/images/ExclamationMark.png}" alt="exclamation" class="icon">
+											<span class="me-5">　未着手</span>
+											<img th:src="@{/images/clock.png}" alt="clock" class="icon">
+											<span class="me-5">　進行中</span>
+											<img th:src="@{/images/Approve.png}" alt="finished" class="icon">
+											<span class="me-5">　完了</span>
+										</div>
+									</div>
+								</div>
+
+								<br>
+								<table class="table custom_table table table-bordered" th:if="${tasks != null && tasks.size() > 0}">
+								    <thead>
+										<th:block th:if="!${#strings.equals(isTrash, 'true')}">
+											<tr>
+											    <th colspan="3">タスク一覧</th>
+											</tr>
+										</th:block>
+										<th:block th:if="${#strings.equals(isTrash, 'true')}">
+											<tr>
+											    <th colspan="3">ゴミ箱</th>
+											</tr>
+										</th:block>
+								    </thead>
+								    <tbody>
+								        <th:block th:if="!${#strings.equals(isTrash, 'true')}" th:each="task : ${tasks}">
+								            <tr th:if="${task.isActive}"
+								                class="task-row-toggle" 
+								                data-bs-toggle="collapse" 
+								                th:data-bs-target="'#task-details-' + ${task.id}" 
+								                aria-expanded="false" 
+								                th:aria-controls="'task-details-' + ${task.id}">
+												
+												<td>▼</td>
+								                <td>
+													<img th:if="${categoriesMap.get(task.categoryId) == '仕事'}" th:src="@{/images/businessman.png}" alt="job" class="icon">
+												    
+												    <img th:if="${categoriesMap.get(task.categoryId) == '趣味'}" th:src="@{/images/hobbies.png}" alt="hobby" class="icon">
+												    
+												    <img th:if="${categoriesMap.get(task.categoryId) == '買い物'}" th:src="@{/images/Shopping.png}" alt="shopping" class="icon">
+												
+													<img th:if="${categoriesMap.get(task.categoryId) != '仕事' and categoriesMap.get(task.categoryId) != '趣味' and categoriesMap.get(task.categoryId) != '買い物'}" th:src="@{/images/question.png}" alt="question" class="icon">
+													: [[${task.title}]]
+												 </td>
+								                <td>					
+													<span th:if="${task.progress == 0}">
+														<img th:src="@{/images/ExclamationMark.png}" alt="exclamation" class="icon">
+													</span>
+													<span th:if="${task.progress == 1}">
+														<img th:src="@{/images/clock.png}" alt="clock" class="icon">
+													</span>
+													<span th:if="${task.progress == 2}">
+														<img th:src="@{/images/Approve.png}" alt="finished" class="icon">
+													</span>
+													 : [[${task.closingDate}]]
+												 </td>
+								            </tr>
+								            <tr th:if="${task.isActive}">
+								                <td colspan="3" class="p-0">
+								                    <div class="collapse" th:id="'task-details-' + ${task.id}">
+								                        <div class="card card-body">
+															<strong>メモ</strong>
+															<br><span>[[${task.memo}]]</span><br>
+								                            <div class="d-flex justify-content-center mt-2">
+
+																	<button type="button" class="btn btn-outline-success btn-sm me-2" 
+																	    data-bs-toggle="modal" 
+																	    data-bs-target="#editTaskModal" 
+																	    th:data-task-id="${task.id}"
+																	    th:data-task-category="${task.categoryId}"
+																	    th:data-task-title="${task.title}"
+																	    th:data-task-memo="${task.memo}"
+																		th:data-task-closingdate="${task.closingDate}"
+																		th:data-task-progress="${task.progress}">
+																	    <i class="bi bi-arrow-clockwise me-1"></i>更新
+																	</button>
+								                                
+																	<form th:action="@{/tasks/delete/{id}(id = ${task.id})}" method="post">
+								                                    <button class="btn btn-outline-danger btn-sm" type="submit"
+																		 onclick="return confirm('ゴミ箱に移動しますか？');">
+																		 <i class="bi bi-trash me-1"></i>削除
+																	 </button>
+									                            </form>
+								                            </div>
+								                        </div>
+								                    </div>
+								                </td>
+								            </tr>
+								        </th:block>
+										
+										<th:block th:if="${#strings.equals(isTrash, 'true')}" th:each="task : ${tasks}">
+								            <tr th:if="!${task.isActive}"
+								                class="task-row-toggle" 
+								                data-bs-toggle="collapse" 
+								                th:data-bs-target="'#task-details-' + ${task.id}" 
+								                aria-expanded="false" 
+								                th:aria-controls="'task-details-' + ${task.id}">
+												
+												<td>▽</td>
+								                <td>
+														<img th:if="${categoriesMap.get(task.categoryId) == '仕事'}" th:src="@{/images/businessman.png}" alt="job" class="icon">
+													    
+													    <img th:if="${categoriesMap.get(task.categoryId) == '趣味'}" th:src="@{/images/hobbies.png}" alt="hobby" class="icon">
+													    
+													    <img th:if="${categoriesMap.get(task.categoryId) == '買い物'}" th:src="@{/images/Shopping.png}" alt="shopping" class="icon">
+													    
+													    <img th:if="${categoriesMap.get(task.categoryId) != '仕事' and categoriesMap.get(task.categoryId) != '趣味' and categoriesMap.get(task.categoryId) != '買い物'}"
+													          th:src="@{/images/Shopping.png}" alt="question" class="icon"></img>
+														 : [[${task.title}]]
+													 </td>
+								                <td>					
+													<span th:if="${task.progress == 0}">
+														<img th:src="@{/images/ExclamationMark.png}" alt="exclamation" class="icon">
+													</span>
+													<span th:if="${task.progress == 1}">
+														<img th:src="@{/images/clock.png}" alt="clock" class="icon">
+													</span>
+													<span th:if="${task.progress == 2}">
+														<img th:src="@{/images/Approve.png}" alt="finished" class="icon">
+													</span>
+													 : [[${task.closingDate}]]
+												 </td>
+								            </tr>
+								            <tr th:if="!${task.isActive}">
+								                <td colspan="3" class="p-0">
+								                    <div class="collapse" th:id="'task-details-' + ${task.id}">
+								                        <div class="card card-body">
+															<strong>メモ</strong>
+															<br><span>[[${task.memo}]]</span><br>
+								                            <div class="d-flex justify-content-center mt-2">
+																<form th:action="@{/tasks/revive/{id}(id = ${task.id})}" method="post">
+								                                    <button class="btn btn-outline-secondary btn-sm me-2" type="submit"
+																		 onclick="return confirm('タスク一覧に戻しますか？');">
+																		 <i class="bi bi-recycle me-1"></i>移動
+																	 </button>
+									                            </form>
+								                                <form th:action="@{/tasks/destroy/{id}(id = ${task.id})}" method="post">
+								                                    <button class="btn btn-outline-danger btn-sm" type="submit"
+																		 onclick="return confirm('完全に削除しますか？');">
+																		 <i class="bi bi-trash me-1"></i>削除
+																	 </button>
+									                            </form>
+								                            </div>
+														</div>
+								                    </div>
+								                </td>
+								            </tr>
+								        </th:block>
+								    </tbody>
+								</table>
+								
+								<div class="container p-3 bg-light text-center" th:if="${tasks != null and tasks.size() == 0}">
+								    <th:block th:switch="${true}">
+										<th:block th:case="${isTrash and not #strings.isEmpty(keyword)}">
+								            <h3>該当タスクが見つかりませんでした...</h3>
+								            <h5>タスクが登録されていない、登録内容が異なる可能性があります</h5>
+								        </th:block>
+								        
+								        <th:block th:case="${not #strings.isEmpty(keyword) and !isTrash}">
+								            <h3>該当タスクが見つかりませんでした...</h3>
+								            <h5>タスクが登録されていない、登録内容が異なる可能性があります</h5>
+								        </th:block>
+								        
+								        <th:block th:case="${#strings.isEmpty(keyword) and isTrash}">
+								            <h3>ゴミ箱は空です</h3>
+								            <h5>削除された項目はここに表示されます</h5>
+
+								        </th:block>
+								        
+								        <th:block th:case="${#strings.isEmpty(keyword) and !isTrash and isCreated}">
+								            <h3>該当タスクが見つかりませんでした...</h3>
+								            <h5>タスクが登録されていない可能性があります</h5>
+								        </th:block>
+
+								        <th:block th:case="${#strings.isEmpty(keyword) and !isTrash and !isCreated}">
+								            <h3>タスクを登録しましょう！</h3>
+								            <h5>タスク一覧を取得するにはタスクを登録する必要があります</h5>
+								        </th:block>
+								    </th:block>
+								</div>
+								
+								<div class="container p-3">
+							        <div th:if="!${#strings.equals(isTrash, 'true')}" class="chase-btn">
+							            <a href="#" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+							                <i class="bi bi-file-earmark-plus h2 mx-2"></i>
+							            </a>
+							        </div>
+							    </div>
+								
+								<nav aria-label="Page navigation" th:if="${pages}">
+								  <ul class="pagination justify-content-center" th:if="${pages.totalPages > 1}">
+								    <li class="page-item" th:classappend="${pages.first} ? 'disabled'">
+								      <a class="page-link" th:href="@{/tasks(page=0, size=${pages.size}, keyword=${param.keyword}, categoryId=${param.categoryId}, trash=${param.trash}, sortByClosingDate=${param.sortByClosingDate}, progress=${param.progress}, filterGraphArea=${param.filterGraphArea}, targetWeekOrMonth=${param.targetWeekOrMonth})}" aria-label="First">
+								        <span aria-hidden="true">&laquo;</span>
+								      </a>
+								    </li>
+
+								    <li class="page-item" th:classappend="${pages.first} ? 'disabled'">
+								      <a class="page-link" th:href="@{/tasks(page=${pages.number - 1}, size=${pages.size}, keyword=${param.keyword}, categoryId=${param.categoryId}, trash=${param.trash}, sortByClosingDate=${param.sortByClosingDate}, progress=${param.progress}, filterGraphArea=${param.filterGraphArea}, targetWeekOrMonth=${param.targetWeekOrMonth})}" aria-label="Previous">
+								        <span aria-hidden="true">&lt;</span>
+								      </a>
+								    </li>
+
+								    <li class="page-item" th:each="i : ${#numbers.sequence(0, pages.totalPages - 1)}" th:classappend="${i == pages.number} ? 'active'">
+								      <a class="page-link" th:href="@{/tasks(page=${i}, size=${pages.size}, keyword=${param.keyword}, categoryId=${param.categoryId}, trash=${param.trash}, sortByClosingDate=${param.sortByClosingDate}, progress=${param.progress}, filterGraphArea=${param.filterGraphArea}, targetWeekOrMonth=${param.targetWeekOrMonth})}">[[${i + 1}]]</a>
+								    </li>
+
+								    <li class="page-item" th:classappend="${pages.last} ? 'disabled'">
+								      <a class="page-link" th:href="@{/tasks(page=${pages.number + 1}, size=${pages.size}, keyword=${param.keyword}, categoryId=${param.categoryId}, trash=${param.trash}, sortByClosingDate=${param.sortByClosingDate}, progress=${param.progress}, filterGraphArea=${param.filterGraphArea}, targetWeekOrMonth=${param.targetWeekOrMonth})}" aria-label="Next">
+								        <span aria-hidden="true">&gt;</span>
+								      </a>
+								    </li>
+
+								    <li class="page-item" th:classappend="${pages.last} ? 'disabled'">
+								      <a class="page-link" th:href="@{/tasks(page=${pages.totalPages - 1}, size=${pages.size}, keyword=${param.keyword}, categoryId=${param.categoryId}, trash=${param.trash}, sortByClosingDate=${param.sortByClosingDate}, progress=${param.progress}, filterGraphArea=${param.filterGraphArea}, targetWeekOrMonth=${param.targetWeekOrMonth})}" aria-label="Last">
+								        <span aria-hidden="true">&raquo;</span>
+								      </a>
+								    </li>
+								  </ul>
+								</nav>
+							</div>
+						</div>
+					</div>
+				</div>
+		</div>
+	</main>
+</div>
+
+<footer th:replace="~{fragments::footer}"></footer >
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" integrity="sha384-7qAoOXltbVP82dhxHAUje59V5r2YsVfBafyUDxEdApLPmcdhBPg1DKg1ERo0BZlK" crossorigin="anonymous"></script>
+<script type="text/javascript" th:inline="javascript">
+	// グラフが必要な場合にのみ、以下の処理を実行
+	var isNeedGraph = /*[[${@account.needGraph}]]*/ null;
+
+	if(isNeedGraph){
+		// グラフ描画のための2Dコンテキストを取得
+		var ctx = document.getElementById("ChartDemo").getContext('2d');
+		var ctx2 = document.getElementById("Statistic").getContext('2d');		
+		var ChartDemo = null;
+		var statistic = null;
+
+		// Thymeleafから渡されたデータをJavaScript変数に代入
+		var data = /*[[${data}]]*/ null;
+		var dataSet = /*[[${dataSet}]]*/ null;
+		var progress = /*[[ ${progress} ]]*/ null;
+		var graphLabels = /*[[ ${label} ]]*/ null;
+
+		// グラフに使用する定数を定義
+		labelsArray = ["未着手", "進行中", "完了済み"];
+		backGroundColors = ['rgba(255, 99, 132, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(54, 162, 235, 0.2)'];
+		borderColors = ['rgba(255, 99, 132, 1)', 'rgba(255, 206, 86, 1)', 'rgba(54, 162, 235, 1)'];
+
+		// 配列の要素を合計するヘルパー関数
+		const arraySum = (array) => array.reduce((acc, cur) => acc + cur, 0);
+
+		// 単一のデータセットが渡された場合の処理
+		if(data !== null && data.length > 0){
+			var label = 'default label';
+			var backgroundColor = '';
+			var borderColor = '';
+			
+			// progressに基づいてラベルと色を設定
+			if(progress !== null){
+				label = labelsArray[progress];
+				backgroundColor = backGroundColors[progress];
+				borderColor = backGroundColors[progress];
+			}
+			
+			// 棒グラフ（ChartDemo）を初期化
+			ChartDemo = new Chart(ctx, {
+				type: 'bar',
+				data: {
+			  		labels: graphLabels,
+			  		datasets: [
+			  			{
+			  				label: label,
+							backgroundColor: backgroundColor,
+			     			borderColor: borderColor,
+			     			lineTension: 0,
+			     			fill: false,
+			     			data: data,
+			     		},
+			  		]
+				},
+				options: {
+			  		responsive: true,
+					scales: {
+						xAxes: [{
+				            ticks: {
+				                stepSize: 2
+				            }
+				        }],
+						
+				        yAxes: [{
+				            ticks: {
+								max: ((Math.max.apply(null, data)/10) + 1) * 10,
+				                min: 0,
+				                stepSize: 10
+				            }
+				        }]
+				    },
+			  	}
+			});	
+
+			console.log(data);
+		// 複数のデータセットが渡された場合の処理
+		}else if(dataSet.length > 0 
+			&& dataSet[0].length > 0
+			&& dataSet[1].length > 0
+			&& dataSet[2].length > 0){
+			
+			// 複数のデータセットを持つ棒グラフを初期化
+			ChartDemo = new Chart(ctx, {
+				type: 'bar',
+				data: {
+			  		labels: graphLabels,
+			  		datasets: [
+			  			{
+			  				label: labelsArray[0],
+							backgroundColor: backGroundColors[0],
+			     			borderColor: backGroundColors[0],
+			     			lineTension: 0,
+			     			fill: false,
+							data: dataSet[0],
+		     			},{
+							label: labelsArray[1],
+							backgroundColor: backGroundColors[1],
+			     			borderColor: backGroundColors[1],
+			     			lineTension: 0,
+			     			fill: false,
+							data: dataSet[1],
+			     		},{
+							label: labelsArray[2],
+							backgroundColor: backGroundColors[2],
+			     			borderColor: backGroundColors[2],
+			     			lineTension: 0,
+			     			fill: false,
+			     			data: dataSet[2],
+			     		},
+			  		]
+				},
+				options: {
+			  		responsive: true,
+					scales: {
+						xAxes: [{
+				            ticks: {
+				                stepSize: 2
+				            }
+				        }],
+						
+				        yAxes: [{
+				            ticks: {
+				                min: 0,
+				                stepSize: 10
+				            }
+				        }]
+					},
+			  	}
+			});	
+			console.log(dataSet);
+		}else{
+			console.log(data);
+			console.log(dataSet);
+		}
+
+		let pieChartLabels;
+		let pieChartData;
+		let pieChartBackgroundColors;
+		let pieChartBorderColors;
+
+		// 円グラフ用のデータを準備
+		if(data !== null && data.length > 0){
+			const sum = arraySum(data);
+			if (sum > 0) {
+				pieChartLabels = [labelsArray[progress]];
+				pieChartData = [sum];
+				pieChartBackgroundColors = [backGroundColors[progress]];
+				pieChartBorderColors = [borderColors[progress]];
+			} else {
+				// 円グラフが潰れてしまうのを防止するため、ダミーデータを設定
+				pieChartLabels = ['データなし'];
+				pieChartData = [1];
+				pieChartBackgroundColors = ['#ccc'];
+				pieChartBorderColors = ['#999'];
+			}
+
+		} else if (dataSet.length > 0 && arraySum(dataSet.flat()) > 0){
+			// 複数のデータセットの合計を計算
+			pieChartLabels = labelsArray;
+			pieChartData = dataSet.map(arr => arraySum(arr));
+			pieChartBackgroundColors = backGroundColors;
+			pieChartBorderColors = borderColors;
+		} else {
+			// データが全くない場合のダミーデータを設定
+			pieChartLabels = ['タスクなし'];
+			pieChartData = [1];
+			pieChartBackgroundColors = ['#ccc'];
+			pieChartBorderColors = ['#999'];
+		}
+
+		// 円グラフ（Statistic）のインスタンスを作成
+		statistic = new Chart(ctx2, {
+			type: 'pie',
+			data: {
+				labels: pieChartLabels,
+				datasets: [{
+					data: pieChartData,
+					backgroundColor: pieChartBackgroundColors,
+					borderColor: pieChartBorderColors,
+				}]
+			},
+			options: {
+				responsive: true,
+				legend: {
+					position: 'right',
+				}
+			}
+		});
+
+		// 棒グラフのクリックイベントを定義
+		if (ChartDemo) {
+		    const chartCanvas = document.getElementById("ChartDemo");
+		    chartCanvas.onclick = function(evt) {
+				const activePoints = ChartDemo.getElementsAtEvent(evt);
+		        
+				if (activePoints.length > 0) {
+		           const element = activePoints[0];
+		           
+		           console.log(`Dataset: ${datasetIndex}, Data Index: ${index}`);
+				   console.log(element);
+		        }
+		    };
+		}
+
+		// AIアドバイスボタンを取得
+		const getAdviceButton = document.getElementById('getAdviceButton');
+		if (getAdviceButton) {
+			// ボタンクリック時のイベントリスナー
+			getAdviceButton.addEventListener('click', async () => {
+				// ローディングスピナーを作成
+				const loadingSpinner = document.createElement('span');
+				loadingSpinner.classList.add('spinner-border', 'spinner-border-sm', 'me-1');
+				loadingSpinner.setAttribute('role', 'status');
+				loadingSpinner.setAttribute('aria-hidden', 'true');
+
+				// 元のボタンのコンテンツを保存
+				const originalContent = getAdviceButton.innerHTML;
+				
+				// ボタンをローディング状態に切り替え
+				getAdviceButton.disabled = true;
+				getAdviceButton.innerHTML = '';
+				getAdviceButton.appendChild(loadingSpinner);
+				getAdviceButton.appendChild(document.createTextNode('分析中...'));
+
+				try {
+					// サーバーに送信するフォームデータを作成
+					const formData = new URLSearchParams();
+					if (graphLabels) {
+						graphLabels.forEach(label => {
+							formData.append("labels", label);
+						});
+					}
+
+					if (progress !== null) {
+						formData.append("progress", progress);
+						if (data && data.length > 0) {
+							data.forEach(val => {
+								formData.append("data", val);
+							});
+						}
+					} else {
+						if (dataSet && dataSet.length === 3) {
+							dataSet[0].forEach(val => {
+								formData.append("unstartedData", val);
+							});
+							dataSet[1].forEach(val => {
+								formData.append("inProgressData", val);
+							});
+							dataSet[2].forEach(val => {
+								formData.append("completedData", val);
+							});
+						}
+					}
+
+					// '/ai/chat'エンドポイントにPOSTリクエストを送信
+					const response = await fetch('/ai/chat', {
+						method: 'POST',
+						body: formData,
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded'
+						}
+					});
+
+					if (!response.ok) {
+						throw new Error('サーバーエラーが発生しました。');
+					}
+					// 応答からテキストデータを取得
+					const advice = await response.text();
+
+					// 成功した場合、AIアドバイスモーダルを表示
+					const aiAdviceModalElement = document.getElementById('aiAdviceModal');
+					const aiAdviceModal = new bootstrap.Modal(aiAdviceModalElement);
+					const modalBody = aiAdviceModalElement.querySelector('.modal-body');
+					
+					modalBody.innerHTML = `
+						<div class="d-flex justify-content-start align-items-start mb-2">
+							<i class="bi bi-robot me-2 ai-icon-large"></i>
+							<div class="p-3 rounded-3 ai-chat-bubble ai-chat-bubble-success alert alert-primary">
+								<p class="mb-0">${advice}</p>
+							</div>
+						</div>
+					`;
+					aiAdviceModal.show();
+
+				} catch (error) {
+					// エラーが発生した場合、コンソールにエラーを出力し、エラーメッセージをモーダルに表示
+					console.error('分析依頼に失敗しました:', error);
+					const aiAdviceModalElement = document.getElementById('aiAdviceModal');
+					const aiAdviceModal = new bootstrap.Modal(aiAdviceModalElement);
+					const modalBody = aiAdviceModalElement.querySelector('.modal-body');
+
+					// エラーメッセージをモーダル内に表示
+					modalBody.innerHTML = `
+						<div class="d-flex justify-content-start align-items-start mb-2">
+							<i class="bi bi-robot me-2 ai-icon-large"></i>
+							<div class="p-3 rounded-3 ai-chat-bubble ai-chat-bubble-error alert alert-danger">
+								<p class="mb-0">分析の取得に失敗しました。</p>
+							</div>
+						</div>
+					`;
+					aiAdviceModal.show();
+				} finally {
+					// 成功・失敗にかかわらず、ボタンを元の状態に戻す
+					getAdviceButton.innerHTML = originalContent;
+					getAdviceButton.disabled = false;
+				}
+			});
+		}
+	}
+
+</script>
+
+<script th:src="@{/js/tasks.js}"></script>
+
+</body>
+</html>

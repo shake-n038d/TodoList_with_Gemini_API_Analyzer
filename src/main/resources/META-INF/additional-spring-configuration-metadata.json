@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "spring.ai.openai.model",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.ai.openai.model'"
+  },
+  {
+    "name": "spring.ai.openai.temperature",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.ai.openai.temperature'"
+  },
+  {
+    "name": "openai.api.key",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.api.key'"
+  },
+  {
+    "name": "openai.api.url",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.api.url'"
+  },
+  {
+    "name": "google.genai.api.key",
+    "type": "java.lang.String",
+    "description": "A description for 'google.genai.api.key'"
+  }
+]}
